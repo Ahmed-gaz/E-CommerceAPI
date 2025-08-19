@@ -4,6 +4,7 @@ using E_CommerceAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace E_CommerceAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250818092824_update")]
+    partial class update
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,9 +159,6 @@ namespace E_CommerceAPI.Migrations
                     b.Property<int>("QuantityInStock")
                         .HasColumnType("int");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.ToTable("Products");
@@ -213,7 +213,7 @@ namespace E_CommerceAPI.Migrations
                         .IsRequired();
 
                     b.HasOne("E_CommerceAPI.Models.Product", "Product")
-                        .WithMany()
+                        .WithMany("CartItems")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -251,6 +251,11 @@ namespace E_CommerceAPI.Migrations
                 {
                     b.Navigation("Order")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("E_CommerceAPI.Models.Product", b =>
+                {
+                    b.Navigation("CartItems");
                 });
 
             modelBuilder.Entity("E_CommerceAPI.Models.User", b =>

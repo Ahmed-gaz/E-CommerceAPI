@@ -27,6 +27,7 @@ namespace E_CommerceAPI.Models
             modelBuilder.Entity<Order>().Property(o => o.Id).IsRequired();
             modelBuilder.Entity<Payment>().Property(p => p.Id).IsRequired();
             modelBuilder.Entity<User>().Property(u => u.Id).IsRequired();
+            modelBuilder.Entity<CartItems>().Property(c => c.Id).IsRequired();
 
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Cart)
@@ -46,10 +47,24 @@ namespace E_CommerceAPI.Models
                 .HasForeignKey(o => o.UserId)
                 .IsRequired();
 
+            modelBuilder.Entity<CartItems>()
+                .HasOne(c => c.Cart)
+                .WithMany(c => c.CartItems)
+                .HasForeignKey(ci => ci.CartId)
+                .IsRequired(); 
+            
+            //modelBuilder.Entity<CartItems>()
+            //    .HasOne(p => p.Product)
+            //    .WithMany(c => c.CartItems)
+            //    .HasForeignKey(p => p.ProductId)
+            //    .IsRequired();
+
             modelBuilder.Entity<Product>()
-                .HasOne(u => u.Cart)
-                .WithMany(p => p.Products)
-                .HasForeignKey(c=>c.CartId)
+                .Property(p => p.Price)
+                .IsRequired();
+
+            modelBuilder.Entity<CartItems>()
+                .Property(ci => ci.Quantity)
                 .IsRequired();
         }
     }

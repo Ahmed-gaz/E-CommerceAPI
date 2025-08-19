@@ -1,51 +1,63 @@
+﻿using E_CommerceAPI.Helpers;
 using E_CommerceAPI.Models;
+using E_CommerceAPI.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using System;
 using System.Text;
+using System.Text.Json.Serialization;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", option =>
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
     {
-        option.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateActor = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
-            )
-        };
+        //options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.Preserve;
+        //options.JsonSerializerOptions.WriteIndented = true;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());// أي enum سيتم تحويله تلقائيًا إلى اسمه النصي عند الإرسال أو الاستلام.
     });
 
-builder.Services.AddAuthentication();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
+
+builder.Services.Configure<JWT>(builder.Configuration.GetSection("Jwt"));
+
+//Authentication + JWT
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(o =>
+{
+    o.RequireHttpsMetadata = false;
+    o.SaveToken = false;
+    o.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(
+            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+        )
+    };
+});
+builder.Services.AddScoped<TokenService>();
+builder.Services.AddAuthorization();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
-app.UseHttpsRedirection();
+app.UseRouting();
 
 app.UseAuthentication();
-
 app.UseAuthorization();
 
 app.MapControllers();
