@@ -1,10 +1,12 @@
 ﻿using E_CommerceAPI.Models;
+using E_CommerceAPI.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NuGet.Protocol;
+using Stripe.Climate;
 using System.Security.Claims;
 
 namespace E_CommerceAPI.Controllers
@@ -21,7 +23,7 @@ namespace E_CommerceAPI.Controllers
             _context = context;
         }
         [HttpGet]
-        public async Task<IActionResult> GetProduct()
+        public async Task<IActionResult> GetProductInCart()
         {
             var userId = User.FindFirstValue("uid");
             var cart = await _context.Carts.Include(c => c.CartItems).ThenInclude(c => c.Product).FirstOrDefaultAsync(c => c.UserId.ToString() == userId);
@@ -75,6 +77,7 @@ namespace E_CommerceAPI.Controllers
 
             await _context.SaveChangesAsync();
 
+           
 
             return Ok(new
             {
@@ -82,5 +85,81 @@ namespace E_CommerceAPI.Controllers
                 Cart = cart
             });
         }
+
+        [HttpDelete("{productId}")]
+        public async Task<IActionResult> DeleteProductInCart(int productId)
+        {
+            var userId = User.FindFirstValue("uid");
+            var cart = await _context.Carts.Include(c => c.CartItems).FirstOrDefaultAsync(c => c.UserId == int.Parse(userId));
+
+            if (cart is null)
+                return NotFound("cart not found");
+        
+            var cartItem = cart.CartItems.FirstOrDefault(p => p.ProductId == productId);
+
+            if (cartItem is null)
+                return NotFound("product not found");
+
+            if (cartItem.Quantity > 1)
+            {
+                cartItem.Quantity--;
+            }
+            else
+            {
+                cart.CartItems.Remove(cartItem);
+               
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "deleted",
+                Cart = cart
+            });
+        }
+
+
+
+
+        [HttpPost("CreateOrder")]
+        public async Task<IActionResult> Checkout([FromServices] StripeService stripeService)
+        {
+            var userId = User.FindFirstValue("uid");
+            var cart = await _context.Carts
+                .Include(c => c.CartItems)
+                .ThenInclude(ci => ci.Product)
+                .FirstOrDefaultAsync(c => c.UserId == int.Parse(userId)); // يحضر الكرت
+            
+            if (cart == null || !cart.CartItems.Any()) // اذا كان الكرت خالي
+                return BadRequest("Cart is empty");
+
+            // إنشاء Order جديد
+            var order = new Orderr
+            {
+                UserId = int.Parse(userId),
+                Date = DateOnly.FromDateTime(DateTime.Now),
+                State = "Pending",
+                Payment = null,
+                OrderItems = cart.CartItems.Select(ci => new OrderItem
+                {
+                    ProductId = ci.ProductId,
+                    Quantity = ci.Quantity,
+                }).ToList()
+            };
+
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync();
+
+            //  إنشاء جلسة الدفع عبر Stripe مع Metadata للربط بالـ Order
+            var session = await stripeService.CreateCheckoutSessionAsync(order, metadata: new Dictionary<string, string>
+            {
+                { "orderId", order.Id.ToString() }
+            });
+
+
+            return Ok(new { url = session.Url });
+        }
+
     }
 }

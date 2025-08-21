@@ -15,6 +15,5 @@
         public int Price { get; set;}
         public int QuantityInStock { get; set; }
         public ProductType Type { get; set; } 
-        //public ICollection<CartItems> CartItems { get; set; }
     }
 }

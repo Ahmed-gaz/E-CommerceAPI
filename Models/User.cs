@@ -8,6 +8,6 @@
         public string Password { get; set; }
         public string Role { get; set; }
         public Cart Cart { get; set; }
-        public ICollection<Order> Orders { get; set; }
+        public ICollection<Orderr> Orders { get; set; }
     }
 }

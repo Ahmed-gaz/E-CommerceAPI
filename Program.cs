@@ -50,6 +50,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 builder.Services.AddScoped<TokenService>();
+builder.Services.AddScoped<StripeService>();
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
 
