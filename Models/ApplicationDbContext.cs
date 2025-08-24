@@ -18,6 +18,8 @@ namespace E_CommerceAPI.Models
         public DbSet<User> Users { get; set; }
         public DbSet<CartItems> cartItems { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Category> Categories { get; set; }
+
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -31,6 +33,8 @@ namespace E_CommerceAPI.Models
             modelBuilder.Entity<User>().Property(u => u.Id).IsRequired();
             modelBuilder.Entity<CartItems>().Property(c => c.Id).IsRequired();
             modelBuilder.Entity<OrderItem>().Property(o => o.Id).IsRequired();
+            modelBuilder.Entity<Category>().Property(c => c.Id).IsRequired();
+
 
 
             modelBuilder.Entity<User>()
@@ -66,6 +70,12 @@ namespace E_CommerceAPI.Models
                 .HasOne(o => o.Product)
                 .WithMany()
                 .HasForeignKey(o => o.ProductId)
+                .IsRequired();
+
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Category)
+                .WithMany(p => p.Products)
+                .HasForeignKey(p => p.CategoryId)
                 .IsRequired();
 
 

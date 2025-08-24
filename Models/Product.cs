@@ -1,19 +1,17 @@
-﻿namespace E_CommerceAPI.Models
+﻿using System.Text.Json.Serialization;
+
+namespace E_CommerceAPI.Models
 {
-    public enum ProductType
-    {
-        Electronics,
-        Clothing,
-        Food,
-        Books
-    }
+   
     public class Product
     {
         public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public int Price { get; set;}
+        public Decimal Price { get; set;}
         public int QuantityInStock { get; set; }
-        public ProductType Type { get; set; } 
+        public int CategoryId { get; set; }
+        //[JsonIgnore]
+        public Category Category { get; set; }
     }
 }

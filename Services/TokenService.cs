@@ -7,7 +7,7 @@ using System.Text;
 
 namespace E_CommerceAPI.Services
 {
-    public class TokenService
+    public class                                                                                                                                                                                                                                                               TokenService
     {
         private readonly JWT _jwt;
         public TokenService(IOptions<JWT> jwt)

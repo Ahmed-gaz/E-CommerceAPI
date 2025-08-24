@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore;
 using NuGet.Protocol;
 using Stripe.Climate;
@@ -26,7 +27,7 @@ namespace E_CommerceAPI.Controllers
         public async Task<IActionResult> GetProductInCart()
         {
             var userId = User.FindFirstValue("uid");
-            var cart = await _context.Carts.Include(c => c.CartItems).ThenInclude(c => c.Product).FirstOrDefaultAsync(c => c.UserId.ToString() == userId);
+            var cart = await _context.Carts.Include(c => c.CartItems).ThenInclude(c => c.Product).ThenInclude(c => c.Category).FirstOrDefaultAsync(c => c.UserId.ToString() == userId);
 
             if (cart is null)
                 return NotFound("user has no cart");
@@ -39,7 +40,7 @@ namespace E_CommerceAPI.Controllers
         public async Task<IActionResult> AddProductToCart(string productName)
         {
             var userId = User.FindFirstValue("uid");
-            var cart = await _context.Carts.Include(c => c.CartItems).FirstOrDefaultAsync(c => c.UserId == Int32.Parse(userId));
+            var cart = await _context.Carts.Include(c => c.CartItems).ThenInclude(ci => ci.Product).FirstOrDefaultAsync(c => c.UserId == Int32.Parse(userId));
 
             if (cart is null)
             {
@@ -64,7 +65,6 @@ namespace E_CommerceAPI.Controllers
             if (cartItem != null)
             {
                 cartItem.Quantity++;
-                addedProduct.QuantityInStock--;
             }
             else
             {
@@ -74,6 +74,9 @@ namespace E_CommerceAPI.Controllers
                     Quantity = 1
                 });
             }
+            addedProduct.QuantityInStock--;
+
+
 
             await _context.SaveChangesAsync();
 
@@ -134,7 +137,6 @@ namespace E_CommerceAPI.Controllers
             if (cart == null || !cart.CartItems.Any()) // اذا كان الكرت خالي
                 return BadRequest("Cart is empty");
 
-            // إنشاء Order جديد
             var order = new Orderr
             {
                 UserId = int.Parse(userId),

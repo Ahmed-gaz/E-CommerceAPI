@@ -24,7 +24,7 @@ namespace E_CommerceAPI.Services
                 {
                     PriceData = new SessionLineItemPriceDataOptions
                     {
-                        UnitAmount = item.Product.Price * 100, // السعر بالـ "cents"
+                        UnitAmount = (long?)(item.Product.Price * 100), // السعر بالـ "cents"
                         Currency = "usd",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {

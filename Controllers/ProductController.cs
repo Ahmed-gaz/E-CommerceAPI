@@ -35,9 +35,9 @@ namespace E_CommerceAPI.Controllers
 
         [Authorize(Roles = "admin,user")]
         [HttpGet("type")]
-        public async Task<IActionResult> GetByType([FromQuery] ProductType type)
+        public async Task<IActionResult> GetByType([FromQuery] int categoryId)
         {
-            var products = await _context.Products.Where(t => t.Type == type).ToListAsync();
+            var products = await _context.Products.Where(t => t.CategoryId == categoryId).ToListAsync();
 
             if (products.Count == 0 || products is null)
             {
