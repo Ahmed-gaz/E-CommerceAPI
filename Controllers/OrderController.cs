@@ -20,49 +20,58 @@ namespace E_CommerceAPI.Controllers
             _context = context;
         }
 
-
         [HttpPost("stripe-webhook")]
         public async Task<IActionResult> StripeWebhook()
         {
+            // قراءة الـ body
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+
+            // التحقق من وجود هيدر Stripe-Signature
+            if (!Request.Headers.ContainsKey("Stripe-Signature"))
+                return BadRequest("Missing Stripe-Signature header.");
+
+            var signatureHeader = Request.Headers["Stripe-Signature"].ToString();
 
             try
             {
+                // إنشاء الـ event مع Stripe
                 var stripeEvent = EventUtility.ConstructEvent(
                     json,
-                    Request.Headers["Stripe-Signature"],
-                    secret: "whsec_67690e0c88517587d8894d2749494f9bea00aeb57906674ca864a2d045df462f" // ضع هنا Webhook Secret
+                    signatureHeader,
+                    secret: "whsec_67690e0c88517587d8894d2749494f9bea00aeb57906674ca864a2d045df462f"
                 );
 
+                // التعامل مع حدث Checkout Session Completed
                 if (stripeEvent.Type == "checkout.session.completed")
                 {
                     var session = stripeEvent.Data.Object as Stripe.Checkout.Session;
+                    if (session?.Metadata == null || !session.Metadata.ContainsKey("orderId"))
+                        return BadRequest("Missing orderId in session metadata.");
 
-                    // 1. جلب Order باستخدام Metadata
                     var orderId = int.Parse(session.Metadata["orderId"]);
-                    var order = await _context.Orders.FirstOrDefaultAsync(o => o.Id == orderId);
+                    var order = await _context.Orders
+                        .Include(o => o.Payment)
+                        .FirstOrDefaultAsync(o => o.Id == orderId);
 
                     if (order != null)
                     {
-                        // 1. إنشاء Payment جديد
                         var payment = new Payment
                         {
                             OrderId = order.Id,
-                            Method = Models.PaymentMethod.Stripe,                // طريقة الدفع
-                            Amount = (int)((session.AmountTotal ?? 0) / 100), // Stripe Amount بالـ cents، نحوله للوحدات الصحيحة
+                            Method = Models.PaymentMethod.Stripe,
+                            Amount = (int)((session.AmountTotal ?? 0) / 100),
                             PaymentDate = DateOnly.FromDateTime(DateTime.Now),
-                            Status = PaymentStatus.Success,              // بما أن الدفع اكتمل
-                            TransactionId = session.Id                   // رقم المعاملة من Stripe
+                            Status = PaymentStatus.Success,
+                            TransactionId = session.Id
                         };
+
                         _context.Payments.Add(payment);
                         await _context.SaveChangesAsync();
 
-                        // 2. تحديث Order
-                        order.PaymentId = payment.Id; // إذا كان لديك FK
+                        order.PaymentId = payment.Id;
                         order.State = "Paid";
                         await _context.SaveChangesAsync();
 
-                        // 3. حذف العناصر من Cart
                         var cart = await _context.Carts
                             .Include(c => c.CartItems)
                             .FirstOrDefaultAsync(c => c.UserId == order.UserId);
@@ -72,14 +81,19 @@ namespace E_CommerceAPI.Controllers
                             await _context.SaveChangesAsync();
                         }
                     }
-
                 }
 
                 return Ok();
             }
             catch (StripeException e)
             {
+                // أي خطأ من Stripe
                 return BadRequest(e.Message);
+            }
+            catch (Exception ex)
+            {
+                // أي خطأ آخر
+                return BadRequest(ex.Message);
             }
         }
 

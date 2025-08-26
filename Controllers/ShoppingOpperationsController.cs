@@ -93,7 +93,7 @@ namespace E_CommerceAPI.Controllers
         public async Task<IActionResult> DeleteProductInCart(int productId)
         {
             var userId = User.FindFirstValue("uid");
-            var cart = await _context.Carts.Include(c => c.CartItems).FirstOrDefaultAsync(c => c.UserId == int.Parse(userId));
+            var cart = await _context.Carts.Include(c => c.CartItems).ThenInclude(p=>p.Product).FirstOrDefaultAsync(c => c.UserId == int.Parse(userId));
 
             if (cart is null)
                 return NotFound("cart not found");

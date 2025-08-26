@@ -34,8 +34,8 @@ namespace E_CommerceAPI.Controllers
         }
 
         [Authorize(Roles = "admin,user")]
-        [HttpGet("type")]
-        public async Task<IActionResult> GetByType([FromQuery] int categoryId)
+        [HttpGet("{categoryId}")]
+        public async Task<IActionResult> GetByType(int categoryId)
         {
             var products = await _context.Products.Where(t => t.CategoryId == categoryId).ToListAsync();
 
@@ -63,7 +63,7 @@ namespace E_CommerceAPI.Controllers
                 Description = productDto.Description,
                 Name = productDto.Name,
                 QuantityInStock = productDto.QuantityInStock,
-                
+                CategoryId = productDto.CategoryId
                 
             };
 
@@ -87,6 +87,7 @@ namespace E_CommerceAPI.Controllers
             updateProduct.Price = productDto.Price;
             updateProduct.Description = productDto.Description;
             updateProduct.QuantityInStock = productDto.QuantityInStock;
+            updateProduct.CategoryId = productDto.CategoryId;
 
             await _context.SaveChangesAsync();
 
