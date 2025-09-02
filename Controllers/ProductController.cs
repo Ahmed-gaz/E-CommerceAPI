@@ -1,5 +1,10 @@
-﻿using E_CommerceAPI.DTOs;
+﻿using E_CommerceAPI.CQRS.Commands;
+using E_CommerceAPI.CQRS.Handelers;
+using E_CommerceAPI.CQRS.Queries;
+using E_CommerceAPI.DTOs;
 using E_CommerceAPI.Models;
+using E_CommerceAPI.Repos;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -12,98 +17,79 @@ namespace E_CommerceAPI.Controllers
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-
-        public ProductController(ApplicationDbContext context)
+        private readonly IProductRepo _repo;
+        private readonly IMediator _mediator;
+        public ProductController(IProductRepo repo , IMediator mediator )
         {
-            _context = context;
+            _repo = repo;
+            _mediator = mediator;
         }
 
         [Authorize(Roles = "admin,user")]
         [HttpGet]
         public async Task<IActionResult> GetProduct()
         {
-            var products = await _context.Products.ToListAsync();
+            var medProducts = await _mediator.Send(new GetProductQuery());
 
-            if (products.Count == 0 || products is null)
+            if (medProducts.Count == 0 || medProducts is null)
             {
                 return NotFound("yok");
             }
 
-            return Ok(products);
+            return Ok(medProducts);
         }
 
         [Authorize(Roles = "admin,user")]
         [HttpGet("{categoryId}")]
         public async Task<IActionResult> GetByType(int categoryId)
         {
-            var products = await _context.Products.Where(t => t.CategoryId == categoryId).ToListAsync();
-
-            if (products.Count == 0 || products is null)
+            var medProduct = await _mediator.Send(new GetProductByTypeQuery(categoryId));
+            if (medProduct.Count == 0 || medProduct is null)
             {
                 return NotFound("yok");
             }
 
-            return Ok(products);
+            return Ok(medProduct);
         }
 
         [Authorize(Roles = "admin")]
         [HttpPost]
         public async Task<IActionResult> AddProduct(ProductDto productDto)
         {
-            var oldProduct = await _context.Products.AnyAsync(p => p.Name == productDto.Name);
 
-            if (oldProduct)
+            var medProduct = await _mediator.Send(new InsertProductCommand(productDto));
+
+            if (medProduct == null)
                 return BadRequest("product already exist");
-
-
-            var newProduct = new Product
-            {
-                Price = productDto.Price,
-                Description = productDto.Description,
-                Name = productDto.Name,
-                QuantityInStock = productDto.QuantityInStock,
-                CategoryId = productDto.CategoryId
-                
-            };
-
-            _context.Products.Add(newProduct);
-            await _context.SaveChangesAsync();
-
-            return Ok(newProduct);
+            
+            return Ok(medProduct);
         }
 
         [Authorize(Roles = "admin")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id , [FromBody] ProductDto productDto)
+        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDto productDto)
         {
-            var updateProduct = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            var updatedProduct = await _mediator.Send(new UpdateProductCommand(productDto, id));
+            if (updatedProduct == null)
+                return NotFound($"Product with Id {id} not found.");
 
-            if (updateProduct == null)
-                return NotFound("product not found");
+            return Ok(updatedProduct);
 
 
-            updateProduct.Name = productDto.Name;
-            updateProduct.Price = productDto.Price;
-            updateProduct.Description = productDto.Description;
-            updateProduct.QuantityInStock = productDto.QuantityInStock;
-            updateProduct.CategoryId = productDto.CategoryId;
+           
 
-            await _context.SaveChangesAsync();
-
-            return Ok(updateProduct);
         }
 
         [Authorize(Roles = "admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var deleteProduct = await _context.Products.FirstOrDefaultAsync(p => p.Id == id);
+            var medProduct = await _mediator.Send(new DeleteProductCommand(id));
 
-            _context.Products.Remove(deleteProduct);
-            await _context.SaveChangesAsync();
+            if (medProduct == null)
+                return NotFound($"Product with Id {id} not found.");
 
-            return Ok(deleteProduct);
+            return Ok(medProduct);
         }
     }
 }

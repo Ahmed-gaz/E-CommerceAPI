@@ -6,6 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
+using MediatR;
+using E_CommerceAPI.CQRS.Queries;
+using E_CommerceAPI.CQRS.Commands;
+
 
 namespace E_CommerceAPI.Controllers
 {
@@ -13,31 +17,32 @@ namespace E_CommerceAPI.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
+        private readonly IMediator _mediatR;
         private readonly ApplicationDbContext _context;
         private readonly TokenService _tokenService;
-        public AuthenticationController(ApplicationDbContext context, TokenService tokenService)
+        public AuthenticationController(ApplicationDbContext context, TokenService tokenService, IMediator mediator)
         {
             _tokenService = tokenService;
             _context = context;
+            _mediatR = mediator;
+        }
+
+        
+        [HttpGet("get")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _mediatR.Send(new GetUserQuery());
+
+            return Ok(users);
         }
 
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto registerDto)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == registerDto.Email))
-                return BadRequest("Email already exists");
-
-            using var hmac = new HMACSHA256();
-            var user = new User
-            {
-                Name = registerDto.Name,
-                Email = registerDto.Email,
-                Password = registerDto.Password,
-                Role = "user"
-            };
-
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            var user = await _mediatR.Send(new RegisterCommand(registerDto));
+            
+            if (user == null)
+                return BadRequest("Email alredy exist");
 
             return Ok("User registered successfully");
         }
@@ -45,24 +50,13 @@ namespace E_CommerceAPI.Controllers
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginDto loginDto)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-            if(user == null || user.Password != loginDto.Password)
+            var userToken = await _mediatR.Send(new LoginCommand(loginDto));
+            
+            if(userToken == null)
                 return Unauthorized("Invalid email or password");
-
-            var token = _tokenService.GenerateToken(user.Id.ToString(),user.Email, user.Role);
-
-            return Ok(new { Token = token });
+  
+            return Ok(new { Token = userToken });
         }
 
-        [HttpGet("get")]
-        public async Task<IActionResult> GetUsers()
-        {
-            var users = await _context.Users.ToListAsync();
-
-            if (users == null || users.Count == 0)
-                return NotFound("yok");
-
-            return Ok(users);
-        }
     }
 }

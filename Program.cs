@@ -1,15 +1,22 @@
-﻿using E_CommerceAPI.Helpers;
+﻿using E_CommerceAPI.CQRS;
+using E_CommerceAPI.CQRS.Commands;
+using E_CommerceAPI.Helpers;
 using E_CommerceAPI.Models;
+using E_CommerceAPI.Repos;
 using E_CommerceAPI.Services;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Reflection;
 using System.Text;
 using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<IProductRepo, ProductRepo>();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(typeof(UpdateProductCommand).Assembly));
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
