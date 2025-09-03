@@ -1,26 +1,26 @@
 ﻿using E_CommerceAPI.CQRS.Commands;
-using E_CommerceAPI.DTOs;
 using E_CommerceAPI.Models;
+using E_CommerceAPI.Repos;
 using E_CommerceAPI.Services;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using NuGet.Protocol.Plugins;
 
 namespace E_CommerceAPI.CQRS.Handelers
 {
-    public class LoginHandler : IRequestHandler<LoginCommand, string>
+    public class LoginHandler : IRequestHandler<LoginCommand, string?>
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IAuthenticationRepo _repo;
         private readonly TokenService _tokenService;
 
-        public LoginHandler(ApplicationDbContext context , TokenService tokenService)
+
+        public LoginHandler(IAuthenticationRepo repo, TokenService tokenService)
         {
             _tokenService = tokenService;
-            _context = context;
+            _repo = repo;
         }
-        public async Task<string> Handle(LoginCommand request, CancellationToken cancellationToken)
+        public async Task<string?> Handle(LoginCommand request, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.loginDto.Email);
+            var user = await _repo.Login(request.loginDto);
             
             if (user == null || user.Password != request.loginDto.Password)
                 return null;

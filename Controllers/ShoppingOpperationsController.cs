@@ -26,12 +26,12 @@ namespace E_CommerceAPI.Controllers
         public async Task<IActionResult> GetProductInCart()
         {
             var userId = User.FindFirstValue("uid");
-            var cart = await _mediator.Send(new GetProductInCartQuery(userId));
+            var cartItemsInCart = await _mediator.Send(new GetProductInCartQuery(userId));
 
-            if (cart is null)
+            if (cartItemsInCart is null)
                 return NotFound("User has no cart");
 
-            return Ok(cart);
+            return Ok(cartItemsInCart);
         }
 
 
@@ -61,6 +61,9 @@ namespace E_CommerceAPI.Controllers
             var userId = User.FindFirstValue("uid");
             var session = await _mediator.Send(new CreateOrderCommand(stripeService,userId));
 
+            if (session is null)
+                return NotFound("Cart is empty");
+
             return Ok(new { url = session.Url });
         }
 
@@ -73,13 +76,13 @@ namespace E_CommerceAPI.Controllers
             var cartItem = await _mediator.Send(new DeleteProductInCartCommand(productId,userId));
 
             if (cartItem is null)
-                return NotFound("cart or product not found");
+                return NotFound("product not found");
 
  
 
             return Ok(new
             {
-                Message = "deleted",
+                Message = "Deleted",
                 CartItem = cartItem
             });
         }

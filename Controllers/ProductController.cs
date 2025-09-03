@@ -73,10 +73,7 @@ namespace E_CommerceAPI.Controllers
             if (updatedProduct == null)
                 return NotFound($"Product with Id {id} not found.");
 
-            return Ok(updatedProduct);
-
-
-           
+            return Ok(updatedProduct);  
 
         }
 

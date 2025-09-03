@@ -13,19 +13,19 @@ namespace E_CommerceAPI.Repos
             _context = context;
         }
 
-        public List<Product> GetProducts()
+        public async Task<List<Product>> GetProducts()
         {
-          return _context.Products.ToList();
+          return await _context.Products.ToListAsync();
         }
-        public List<Product> GetByCategory(int categoryId)
+        public async Task<List<Product>> GetByCategory(int categoryId)
         {
-            var product = _context.Products.Where(p => p.CategoryId == categoryId).ToList();
+            var product = await _context.Products.Where(p => p.CategoryId == categoryId).ToListAsync();
 
             return product;
 
         }
 
-        public int InsertProduct(ProductDto productDto)
+        public async Task<Product> InsertProduct(ProductDto productDto)
         {
 
             var newProduct = new Product
@@ -38,27 +38,33 @@ namespace E_CommerceAPI.Repos
 
             };
             _context.Products.Add(newProduct);
-            return _context.SaveChanges();
+            await _context.SaveChangesAsync();
+            return newProduct;
         }
 
-        public int EditProduct(int productId , ProductDto productDto)
+        public async Task<Product> EditProduct(int productId , ProductDto productDto)
         {
-            var product = _context.Products.Where(p => p.Id == productId).FirstOrDefault();
+            var product = await _context.Products.Where(p => p.Id == productId).FirstOrDefaultAsync();
             product.Name = productDto.Name;
             product.Price = productDto.Price;
             product.Description = productDto.Description;
             product.QuantityInStock = productDto.QuantityInStock;
             product.CategoryId = productDto.CategoryId;
 
-            return _context.SaveChanges();
+           await _context.SaveChangesAsync();
+
+            return product; 
         }
 
-        public int Deleteproduct(int productId)
+        public async Task<Product?> Deleteproduct(int productId)
         {
-            var product = _context.Products.Where(p => p.Id == productId).FirstOrDefault();
+            var product = await _context.Products.Where(p => p.Id == productId).FirstOrDefaultAsync();
             if (product != null)
                 _context.Products.Remove(product);
-            return _context.SaveChanges();
+            
+           await _context.SaveChangesAsync();
+
+            return product;
         }
 
       

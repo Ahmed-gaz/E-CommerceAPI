@@ -1,30 +1,26 @@
 ﻿using E_CommerceAPI.CQRS.Commands;
-using E_CommerceAPI.Models;
+using E_CommerceAPI.Repos;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
-using NuGet.Protocol.Plugins;
-using Stripe;
+
 
 namespace E_CommerceAPI.CQRS.Handelers
 {
-    public class DeleteProductHandler : IRequestHandler<DeleteProductCommand,Models.Product>
+    public class DeleteProductHandler : IRequestHandler<DeleteProductCommand,Models.Product?>
     {
-        private ApplicationDbContext _context;
-
-        public DeleteProductHandler(ApplicationDbContext context)
+        private IProductRepo _repo;
+        public DeleteProductHandler(IProductRepo repo)
         {
-            _context = context;
+            _repo = repo;
         }
 
-        public async Task<Models.Product> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
+        public async Task<Models.Product?> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
         {
-            var deletedProduct = await _context.Products.FirstOrDefaultAsync(p => p.Id == request.productId);
+            var deletedProduct = await _repo.Deleteproduct(request.productId);
             
             if (deletedProduct == null)
                 return null;
 
-            _context.Products.Remove(deletedProduct);
-            await _context.SaveChangesAsync(cancellationToken);
+           
             return deletedProduct;
         }
 

@@ -1,6 +1,7 @@
 ﻿using E_CommerceAPI.CQRS.Commands;
 using E_CommerceAPI.DTOs;
 using E_CommerceAPI.Models;
+using E_CommerceAPI.Repos;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,32 +9,26 @@ using Microsoft.EntityFrameworkCore;
 
 namespace E_CommerceAPI.CQRS.Handelers
 {
-    public class InsertProductHandler : IRequestHandler<InsertProductCommand , Product>
+    public class InsertProductHandler : IRequestHandler<InsertProductCommand , Product?>
     {
         private ApplicationDbContext _context;
-        public InsertProductHandler(ApplicationDbContext context)
+        private IProductRepo _repo;
+        public InsertProductHandler(ApplicationDbContext context, IProductRepo repo)
         {
+            _repo = repo;
             _context = context;
         }
 
-        public async Task<Product> Handle(InsertProductCommand request, CancellationToken cancellationToken)
+        public async Task<Product?> Handle(InsertProductCommand request, CancellationToken cancellationToken)
         {
             var oldProduct = await _context.Products.AnyAsync(p => p.Name == request.productDto.Name);
 
             if (oldProduct)
                 return null;
 
-            var product = new Product
-            {
-                Name = request.productDto.Name,
-                Price = request.productDto.Price,
-                CategoryId = request.productDto.CategoryId,
-                Description = request.productDto.Description,
-                QuantityInStock = request.productDto.QuantityInStock
-            };
+            var product = await _repo.InsertProduct(request.productDto);
 
-            await _context.Products.AddAsync(product, cancellationToken);
-            await _context.SaveChangesAsync(cancellationToken);
+
 
             return product;
         }

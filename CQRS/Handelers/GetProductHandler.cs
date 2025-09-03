@@ -1,5 +1,6 @@
 ﻿using E_CommerceAPI.CQRS.Queries;
 using E_CommerceAPI.Models;
+using E_CommerceAPI.Repos;
 using MediatR;
 using NuGet.Protocol.Plugins;
 
@@ -7,15 +8,15 @@ namespace E_CommerceAPI.CQRS.Handelers
 {
     public class GetProductHandler : IRequestHandler<GetProductQuery, List<Product>>
     {
-        private ApplicationDbContext _context;
+        private IProductRepo _repo;
 
-        public GetProductHandler(ApplicationDbContext context)
+        public GetProductHandler(IProductRepo repo)
         {
-            _context = context;
+            _repo = repo;
         }
         public async Task<List<Product>> Handle(GetProductQuery request, CancellationToken cancellationToken)
         {
-            return await Task.FromResult(_context.Products.ToList());
+            return await _repo.GetProducts();
         }
     }
 }

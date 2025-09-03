@@ -5,10 +5,10 @@ namespace E_CommerceAPI.Repos
 {
     public interface IProductRepo
     {
-        public List<Product> GetProducts();
-        public List<Product> GetByCategory(int categoryId);
-        public int InsertProduct(ProductDto productDto);
-        public int EditProduct(int productId,ProductDto productDto);
-        public int Deleteproduct(int productId);
+        public Task<List<Product>> GetProducts();
+        public Task<List<Product>> GetByCategory(int categoryId);
+        public Task<Product> InsertProduct(ProductDto productDto);
+        public Task<Product> EditProduct(int productId,ProductDto productDto);
+        public Task<Product?> Deleteproduct(int productId);
     }
 }

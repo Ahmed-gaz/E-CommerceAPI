@@ -16,6 +16,11 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<IProductRepo, ProductRepo>();
+builder.Services.AddScoped<IAuthenticationRepo, AuthenticationRepo>();
+builder.Services.AddScoped<IShoppingOpperationsRepo, ShoppingOpperationsRepo>();
+builder.Services.AddScoped<IOrderRepo, OrderRepo>();
+
+
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(typeof(UpdateProductCommand).Assembly));
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
